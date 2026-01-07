@@ -20,9 +20,13 @@ add_executable(
 	src/helper.cpp
 	src/dataHandler.cpp
 	src/global.cpp
+	src/chat.cpp
+	src/world.cpp
+	src/lut.cpp
 )
 
 target_link_libraries(
 	betatty
+    deflate
     ${CURSES_LIBRARIES}
 )

@@ -8,6 +8,7 @@ class Entity {
     public:
         int32_t id;
         Double3 pos;
+        double cameraY;
         Float3 rot;
         Entity() {}
         Entity(int32_t pId) : 
@@ -27,6 +28,7 @@ class Client {
         std::string username = "Steve";
         ConnectionState connectionState = ConnectionState::STATE_OFFLINE;
         Player player;
+        bool hasMoved = true;
 
         Client() : username("Steve"), connectionState(ConnectionState::STATE_OFFLINE) {}
         Client(std::string pUsername) { username = pUsername; }

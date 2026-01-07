@@ -1,12 +1,19 @@
 #include "packet.h"
+#include "chat.h"
 #include "datatypes.h"
 #include "defines.h"
 #include "entity.h"
 #include "enum.h"
+#include "global.h"
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <mutex>
 #include <sys/socket.h>
+#include <sys/types.h>
+#include <utility>
+#include "helper.h"
+#include "world.h"
 
 std::deque<uint8_t> outgoingPacketBuffer;
 std::deque<uint8_t> incomingPacketBuffer;
@@ -27,6 +34,33 @@ void AsyncPacketReceive(int clientSocket) {
         }
 
         bufferCv.notify_all();
+    }
+}
+
+void AsyncPacketSend(int clientSocket) {
+    using clock = std::chrono::steady_clock;
+    auto lastKeepAlive = clock::now();
+
+    while(true) {
+        std::unique_lock<std::mutex> lock(bufferMutex);
+
+        bufferCv.wait(lock, [&] {
+            return !incomingPacketBuffer.empty();
+        });
+
+        PacketType pt = static_cast<PacketType>(incomingPacketBuffer.front());
+        incomingPacketBuffer.pop_front();
+
+        lock.unlock(); // do NOT hold the mutex while parsing
+        ParsePacket(pt, clientSocket);
+        
+        auto now = clock::now();
+        if (now - lastKeepAlive >= std::chrono::milliseconds(50)) {
+            KeepAlivePacket kaPacket;
+            kaPacket.Send(clientSocket);
+            lastKeepAlive = now;
+        }
+        //std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 }
 
@@ -95,6 +129,12 @@ void ParsePacket(PacketType pt, int cs) {
             spPacket.Receive();
             break;
         }
+        case PacketType::DestroyEntity:
+        {
+            DestroyEntityPacket dePacket;
+            dePacket.Receive();
+            break;
+        }
         case PacketType::PlayerPositionLook:
         {
             PlayerPositionLookPacket pplPacket;
@@ -126,7 +166,9 @@ void ParsePacket(PacketType pt, int cs) {
             break;
         }
         default:
-            std::cout << std::hex << "0x" << int(pt) << std::dec << "\n";
+            // std::cout << std::hex << "0x" << int(pt) << std::dec << "\n";
+            std::string msg = std::to_string(int(pt));
+            chatHistory.push_back(std::make_pair(worldTime,msg));
             incomingPacketBuffer.pop_front();
             break;
     }
@@ -161,7 +203,7 @@ void LoginPacket::Serialize() {
     DataHandler::WriteString16(username);
     DataHandler::WriteLong(0);
     DataHandler::WriteByte(0);
-    std::cout << "> Login: " << username << std::endl;
+    // std::cout << "> Login: " << username << std::endl;
 }
 
 void LoginPacket::Deserialize() {
@@ -169,34 +211,35 @@ void LoginPacket::Deserialize() {
     DataHandler::ReadString16();
     seed = DataHandler::ReadLong();
     dimension = DataHandler::ReadByte();
-    std::cout << "< Login: " << entityId << " " << seed << std::endl;
+    // std::cout << "< Login: " << entityId << " " << seed << std::endl;
 }
 
 void HandshakePacket::Serialize() {
     DataHandler::WriteString16(username);
-    std::cout << "> Handshake: " << username << std::endl;
+    // std::cout << "> Handshake: " << username << std::endl;
 }
 
 void HandshakePacket::Deserialize() {
     username = DataHandler::ReadString16();
-    std::cout << "< Handshake: " << username << std::endl;
+    // std::cout << "< Handshake: " << username << std::endl;
 }
 
 void ChatMessagePacket::Serialize() {
     DataHandler::WriteString16(message);
-    std::cout << "> ChatMessage: " << message << std::endl;
+    // std::cout << "> ChatMessage: " << message << std::endl;
 }
 
 void ChatMessagePacket::Deserialize() {
     message = DataHandler::ReadString16();
-    std::cout << "< ChatMessage: " << message << std::endl;
+    // std::cout << "< ChatMessage: " << message << std::endl;
+    chatHistory.push_back(std::make_pair(worldTime, message));
 }
 
 void SpawnPositionPacket::Serialize() {
     DataHandler::WriteInteger(pos.x);
     DataHandler::WriteInteger(pos.y);
     DataHandler::WriteInteger(pos.z);
-    std::cout << "> SpawnPosition: " << pos << std::endl;
+    // std::cout << "> SpawnPosition: " << pos << std::endl;
 }
 
 void SpawnPositionPacket::Deserialize() {
@@ -205,17 +248,19 @@ void SpawnPositionPacket::Deserialize() {
         DataHandler::ReadInteger(),
         DataHandler::ReadInteger(),
     };
-    std::cout << "< SpawnPosition: " << pos << std::endl;
+    // std::cout << "< SpawnPosition: " << pos << std::endl;
 }
 
 void TimeUpdatePacket::Serialize() {
+    time = worldTime;
     DataHandler::WriteLong(time);
-    std::cout << "> TimeUpdate: " << time << std::endl;
+    // std::cout << "> TimeUpdate: " << time << std::endl;
 }
 
 void TimeUpdatePacket::Deserialize() {
     time = DataHandler::ReadLong();
-    std::cout << "< TimeUpdate: " << time << std::endl;
+    worldTime = time;
+    // std::cout << "< TimeUpdate: " << time << std::endl;
 }
 
 void EntityEquipmentPacket::Serialize() {
@@ -223,7 +268,7 @@ void EntityEquipmentPacket::Serialize() {
     DataHandler::WriteShort(inventorySlot);
     DataHandler::WriteShort(itemId);
     DataHandler::WriteShort(itemMeta);
-    std::cout << "> EntityEquipment: " << itemId << std::endl;
+    // std::cout << "> EntityEquipment: " << itemId << std::endl;
 }
 
 void EntityEquipmentPacket::Deserialize() {
@@ -231,7 +276,7 @@ void EntityEquipmentPacket::Deserialize() {
     inventorySlot = DataHandler::ReadShort();
     itemId = DataHandler::ReadShort();
     itemMeta = DataHandler::ReadShort();
-    std::cout << "< EntityEquipment: " << itemId << std::endl;
+    // std::cout << "< EntityEquipment: " << itemId << std::endl;
 }
 
 void SpawnPlayerPacket::Serialize() {
@@ -250,8 +295,20 @@ void SpawnPlayerPacket::Deserialize() {
         (float(DataHandler::ReadByte()) / 255.0f) * 360.0f,
         0.0f
     };
+    players[player.id] = player;
     DataHandler::ReadShort();
-    std::cout << "< SpawnPlayer: " << player.username << " " << player.pos << std::endl;
+    // std::cout << "< SpawnPlayer: " << player.username << " " << player.pos << std::endl;
+}
+
+void DestroyEntityPacket::Serialize() {
+    DataHandler::WriteInteger(entityId);
+    // std::cout << "> DestroyEntity: " << entityId << std::endl;
+}
+
+void DestroyEntityPacket::Deserialize() {
+    entityId = DataHandler::ReadInteger();
+    players.erase(entityId);
+    // std::cout << "< DestroyEntity: " << entityId << std::endl;
 }
 
 void PlayerPositionLookPacket::Serialize() {
@@ -260,9 +317,9 @@ void PlayerPositionLookPacket::Serialize() {
     DataHandler::WriteDouble(cameraY);
     DataHandler::WriteDouble(pos.z);
     DataHandler::WriteFloat(rot.x);
-    DataHandler::WriteDouble(rot.y);
+    DataHandler::WriteFloat(rot.y);
     DataHandler::WriteByte(uint8_t(onGround));
-    std::cout << "> PlayerPositionAndLook: " << pos << " " << rot << std::endl;
+    // std::cout << "> PlayerPositionAndLook: " << pos << " " << rot << std::endl;
 }
 
 void PlayerPositionLookPacket::Deserialize() {
@@ -275,7 +332,9 @@ void PlayerPositionLookPacket::Deserialize() {
         DataHandler::ReadFloat()
     };
     onGround = bool(DataHandler::ReadByte());
-    std::cout << "< PlayerPositionAndLook: " << pos << " " << rot << std::endl;
+    client.player.pos = pos;
+    client.player.rot = Float3{rot.x,rot.y,0};
+    // std::cout << "< PlayerPositionAndLook: " << pos << " " << rot << std::endl;
 }
 
 void EntityPositionLookPacket::Serialize() {
@@ -285,7 +344,7 @@ void EntityPositionLookPacket::Serialize() {
     DataHandler::WriteInteger(pos.z);
     DataHandler::WriteByte(rot.x);
     DataHandler::WriteByte(rot.y);
-    std::cout << "> EntityPositionLook: " << pos << std::endl;
+    // std::cout << "> EntityPositionLook: " << pos << std::endl;
 }
 
 void EntityPositionLookPacket::Deserialize() {
@@ -295,7 +354,18 @@ void EntityPositionLookPacket::Deserialize() {
     pos.z = DataHandler::ReadInteger();
     rot.x = DataHandler::ReadByte();
     rot.y = DataHandler::ReadByte();
-    std::cout << "< EntityPositionLook: " << pos << std::endl;
+    Player* p = &players[entityId];
+    p->pos = Double3 {
+        double(pos.x / 32.0f),
+        double(pos.y / 32.0f),
+        double(pos.z / 32.0f),
+    };
+    p->rot = Float3 {
+        (float(rot.x) / 255.0f) * 360.0f,
+        (float(rot.y) / 255.0f) * 360.0f,
+        0.0f
+    };
+    // std::cout << "< EntityPositionLook: " << p->pos << std::endl;
 }
 
 void PreChunkPacket::Serialize() {
@@ -317,26 +387,62 @@ void PreChunkPacket::Deserialize() {
 
 void ChunkPacket::Serialize() {
     //DataHandler::WriteLong(time);
-    std::cout << "> Chunk: " << time << std::endl;
+    // std::cout << "> Chunk: " << time << std::endl;
 }
 
+#include <libdeflate.h>
+
 void ChunkPacket::Deserialize() {
-    DataHandler::ReadInteger();
-    DataHandler::ReadShort();
-    DataHandler::ReadInteger();
-    DataHandler::ReadByte();
-    DataHandler::ReadByte();
-    DataHandler::ReadByte();
-    int32_t size = DataHandler::ReadInteger();
-    for (int32_t i = 0; i < size; i++) {
-        DataHandler::ReadByte();
+    pos = Int3{
+        DataHandler::ReadInteger(),
+        DataHandler::ReadShort(),
+        DataHandler::ReadInteger(),
+    };
+    area = UByte3{
+        DataHandler::ReadByte(),
+        DataHandler::ReadByte(),
+        DataHandler::ReadByte(),
+    };
+    compressedSize = DataHandler::ReadInteger();
+    compressedData.reserve(compressedSize);
+    for (int32_t i = 0; i < compressedSize; i++) {
+        compressedData.push_back(DataHandler::ReadByte());
     }
+
+    std::vector<uint8_t> decompressedData(CHUNK_TOTAL*4);
+    libdeflate_result result = LIBDEFLATE_SUCCESS;
+
+    static libdeflate_decompressor* decompressor = nullptr;
+    if (!decompressor)
+        decompressor = libdeflate_alloc_decompressor();
+
+    if (decompressor) {
+        size_t actual_size = 0;
+        result = libdeflate_zlib_decompress(
+            decompressor,
+            compressedData.data(), compressedSize,           // Input data
+            decompressedData.data(), CHUNK_TOTAL*4, // Output buffer
+            &actual_size                              // Actual decompressed size
+        );
+        decompressedData.shrink_to_fit();
+        Chunk* c = &chunks[GetChunkId(Int2{pos.x/CHUNK_WIDTH_X, pos.z/CHUNK_WIDTH_Z})];
+        for (uint8_t x = 0; x < CHUNK_WIDTH_X; x++) {
+            for (uint8_t z = 0; z < CHUNK_WIDTH_Z; z++) {
+                for (uint8_t y = 0; y < CHUNK_HEIGHT; y++) {
+                    Int3 pos = Int3{x,y,z};
+                    c->SetBlock(decompressedData[PosToIndex(pos)], pos);
+                }
+            }   
+        }
+    }
+    
+    
     //std::cout << "< Chunk: " << size << std::endl;
 }
 
 void WindowItemsPacket::Serialize() {
     //DataHandler::WriteLong(time);
-    std::cout << "> WindowItems: " << time << std::endl;
+    // std::cout << "> WindowItems: " << time << std::endl;
 }
 
 void WindowItemsPacket::Deserialize() {
@@ -349,6 +455,15 @@ void WindowItemsPacket::Deserialize() {
             DataHandler::ReadShort();
         }
     }
-    std::cout << "< WindowItems: " << size << std::endl;
+    // std::cout << "< WindowItems: " << size << std::endl;
 }
 
+void DisconnectPacket::Serialize() {
+    DataHandler::WriteString16(message);
+    //std::cout << "> PreChunk: " << pos << std::endl;
+}
+
+void DisconnectPacket::Deserialize() {
+    message = DataHandler::ReadString16();
+    //std::cout << "< PreChunk: " << pos << std::endl;
+}

@@ -20,6 +20,7 @@ extern std::condition_variable bufferCv;
 
 // network thread
 void AsyncPacketReceive(int clientSocket);
+void AsyncPacketSend(int clientSocket);
 
 void ParsePacket(PacketType pt, int cs);
 bool EnoughBytesReceived(PacketType pt);
@@ -127,6 +128,14 @@ class SpawnPlayerPacket : public BasePacket {
         void Deserialize() override;
 };
 
+class DestroyEntityPacket : public BasePacket {
+    public:
+        int32_t entityId;
+        DestroyEntityPacket() { type = PacketType::DestroyEntity; }
+        void Serialize() override;
+        void Deserialize() override;
+};
+
 class PlayerPositionLookPacket : public BasePacket {
     public:
         Double3 pos;
@@ -162,6 +171,10 @@ class EntityPositionLookPacket : public BasePacket {
 
 class ChunkPacket : public BasePacket {
     public:
+        Int3 pos;
+        UByte3 area;
+        int32_t compressedSize;
+        std::vector<uint8_t> compressedData;
         ChunkPacket() { type = PacketType::Chunk; }
         void Serialize() override;
         void Deserialize() override;
@@ -179,6 +192,14 @@ class PreChunkPacket : public BasePacket {
 class WindowItemsPacket : public BasePacket {
     public:
         WindowItemsPacket() { type = PacketType::WindowItems; }
+        void Serialize() override;
+        void Deserialize() override;
+};
+
+class DisconnectPacket : public BasePacket {
+    public:
+        std::string message;
+        DisconnectPacket() { type = PacketType::Disconnect; }
         void Serialize() override;
         void Deserialize() override;
 };
