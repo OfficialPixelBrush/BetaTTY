@@ -2,6 +2,14 @@
 #include <cstdint>
 #include <ostream>
 
+struct Byte2 {
+    int8_t x,y;
+    friend std::ostream& operator<<(std::ostream& os, const Byte2& a) {
+        os << "(" << a.x << ", " << a.y << ")";
+        return os;
+    }
+};
+
 struct Int2 {
     int32_t x,y;
     friend std::ostream& operator<<(std::ostream& os, const Int2& a) {

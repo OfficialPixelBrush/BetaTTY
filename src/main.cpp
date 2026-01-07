@@ -1,16 +1,21 @@
 #include "defines.h"
 #include "helper.h"
 #include "packet.h"
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <ncurses.h>
 #include <cstdint>
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <ratio>
 #include <sys/socket.h>
 #include <thread>
 #include <unistd.h>
+#include "enum.h"
 #include <vector>
+#include "entity.h"
+#include "global.h"
 
 // Max Terminal size
 int max_width;
@@ -37,7 +42,6 @@ int RenderWorld() {
 }
 
 int main(int argc, char *argv[]) {
-    std::string username = "Steve";
     std::string server_ip_string = "127.0.0.1"; // Defaults to localhost
     uint32_t server_ip = 0;
     uint16_t server_port = 25565; // Defaults to default MC port
@@ -60,11 +64,11 @@ int main(int argc, char *argv[]) {
     server_port = htons(uint16_t(server_port));
     // IP + Port + Username
     if (argc > 3) {
-        username = std::string(argv[3]);
+        client.username = std::string(argv[3]);
     }
 
     std::cout << "Connecting to " << server_ip_string  << ":" << htons(server_port)
-              << " as " << username << "\n";
+              << " as " << client.username << "\n";
 
     // Init client socket
     int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -78,34 +82,39 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     std::cout << "Connected to server!\n";
-
-    // Attempt Handshake
-    HandshakePacket hsPacket(username);
-    hsPacket.Send(clientSocket);
-    sleep(1);
-    uint8_t dataBuffer[PACKET_BUFFER_SIZE];
-    recv(clientSocket, dataBuffer, sizeof(dataBuffer), 0);
-    hsPacket.Receive();
-
-    // Login
-    LoginPacket loginPacket(username);
-    loginPacket.Send(clientSocket);
-
+    
     std::thread networkThread(AsyncPacketReceive, clientSocket);
+    networkThread.detach();
+
+    // Send out handshake packet
+    HandshakePacket hsPacket;
+    hsPacket.username = client.username;
+    client.connectionState = ConnectionState::STATE_HANDSHAKE;
+    hsPacket.Send(clientSocket);
+
+    uint8_t packetIndex = 0;
 
     while(true) {
-        while (true) {
-            if (incomingPacketBuffer.empty()) break;
-            
-            PacketType pt = PacketType(incomingPacketBuffer.front());
-            incomingPacketBuffer.pop_front();
-            ParsePacket(pt);
+        std::unique_lock<std::mutex> lock(bufferMutex);
+
+        bufferCv.wait(lock, [&] {
+            return !incomingPacketBuffer.empty();
+        });
+
+        PacketType pt = static_cast<PacketType>(incomingPacketBuffer.front());
+        incomingPacketBuffer.pop_front();
+
+        lock.unlock(); // do NOT hold the mutex while parsing
+        ParsePacket(pt, clientSocket);
+        packetIndex++;
+        if (packetIndex % 10 == 0) {
+            KeepAlivePacket kaPacket;
+            kaPacket.Send(clientSocket);
+            packetIndex = 0;
         }
+        //std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
 
-    networkThread.join();
-
-    close(clientSocket);
 
     /*
 
@@ -141,6 +150,8 @@ int main(int argc, char *argv[]) {
 
     endwin();
     */
+    close(clientSocket);
+    networkThread.join();
 
     return 0;
 }

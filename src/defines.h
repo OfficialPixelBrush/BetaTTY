@@ -1,11 +1,15 @@
 #pragma once
 
+// Gameplay
+#define TICK_SPEED 20
+
 // Terminal related
 #define MINIMUM_SIZE_WIDTH  40
 #define MINIMUM_SIZE_HEIGHT 15
 
 // Packet related
 #define PACKET_BUFFER_SIZE 4096
+#define PACKET_INTERVAL 1000/20
 #define PROTOCOL_VERSION 14
 
 // Chat-related

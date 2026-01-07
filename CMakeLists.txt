@@ -18,6 +18,8 @@ add_executable(
 	src/chunk.cpp
 	src/packet.cpp
 	src/helper.cpp
+	src/dataHandler.cpp
+	src/global.cpp
 )
 
 target_link_libraries(
