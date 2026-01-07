@@ -49,6 +49,20 @@ struct Int3 {
         os << "(" << a.x << ", " << a.y << ", " << a.z << ")";
         return os;
     }
+    friend Int3 operator-(const Int3& a, const Int3& b) {
+        Int3 r;
+        r.x = a.x - b.x;
+        r.y = a.y - b.y;
+        r.z = a.z - b.z;
+        return r;
+    }
+    friend Int3 operator+(const Int3& a, const Int3& b) {
+        Int3 r;
+        r.x = a.x + b.x;
+        r.y = a.y + b.y;
+        r.z = a.z + b.z;
+        return r;
+    }
 };
 
 

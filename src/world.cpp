@@ -32,15 +32,15 @@ int8_t GetSolidHeight(Int2 pos) {
     return 0;
 }
 
-int8_t GetTopBlock(Int2 pos) {
+std::pair<int8_t, int8_t> GetTopBlock(Int2 pos) {
     Int2 cPos = Int2{pos.x / CHUNK_WIDTH_X, pos.y / CHUNK_WIDTH_Z};
     for(int8_t y = CHUNK_HEIGHT-1; y >= 0; y--) {
         int8_t type = GetBlock(Int3{pos.x,y,pos.y});
         if (type != 0) {
-            return type;
+            return std::make_pair(type, y);
         }
     }
-    return 0;
+    return std::make_pair(0,0);
 }
 
 int8_t GetBlock(Int3 pos) {

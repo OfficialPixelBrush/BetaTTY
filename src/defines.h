@@ -2,6 +2,7 @@
 
 // Gameplay
 #define TICK_SPEED 20
+#define MAX_REACH 4
 
 // Terminal related
 #define MINIMUM_SIZE_WIDTH  40

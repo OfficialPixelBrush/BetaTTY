@@ -16,7 +16,9 @@ int RenderChat() {
             // erase returns normal iterator, need base() for reverse_iterator
             it = decltype(it)(chatHistory.erase(std::next(it).base()));
         } else {
-            mvwprintw(stdscr, max_height - 1 - i, 0, "%s", it->second.c_str());
+            int offset = 1;
+            if (client.isTyping) offset++;
+            mvwprintw(stdscr, max_height - offset - i, 0, "%s", it->second.c_str());
             ++i;
             ++it;
         }

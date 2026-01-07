@@ -29,6 +29,9 @@ class Client {
         ConnectionState connectionState = ConnectionState::STATE_OFFLINE;
         Player player;
         bool hasMoved = true;
+        bool isTyping = false;
+        Int3 cursor;
+        Int3 cursorWorld;
 
         Client() : username("Steve"), connectionState(ConnectionState::STATE_OFFLINE) {}
         Client(std::string pUsername) { username = pUsername; }

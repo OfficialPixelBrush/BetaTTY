@@ -8,4 +8,4 @@ Int2 GetChunkPos(int64_t index);
 int8_t GetBlock(Int3 pos);
 void SetBlock(int8_t type, Int3 pos);
 int8_t GetSolidHeight(Int2 pos);
-int8_t GetTopBlock(Int2 pos);
+std::pair<int8_t, int8_t> GetTopBlock(Int2 pos);

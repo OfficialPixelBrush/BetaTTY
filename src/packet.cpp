@@ -177,9 +177,11 @@ void ParsePacket(PacketType pt, int cs) {
 void BasePacket::Send(int cs) {
     DataHandler::WriteByte(uint8_t(type));
     Serialize();
+    if (outgoingPacketBuffer.empty()) return;
+
     uint8_t dataBuffer[PACKET_BUFFER_SIZE];
     size_t i = 0;
-    while (!outgoingPacketBuffer.empty()) {
+    while (!outgoingPacketBuffer.empty() && i < PACKET_BUFFER_SIZE) {
         dataBuffer[i++] = outgoingPacketBuffer.front();
         outgoingPacketBuffer.pop_front();
     }
@@ -381,6 +383,9 @@ void PreChunkPacket::Deserialize() {
         DataHandler::ReadInteger(),
     };
     load = bool(DataHandler::ReadByte());
+    if (!load) {
+        chunks.erase(GetChunkId(pos));
+    }
     //std::cout << "< PreChunk: " << pos << std::endl;
 }
 
