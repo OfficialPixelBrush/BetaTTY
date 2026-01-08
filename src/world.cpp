@@ -22,7 +22,10 @@ Int2 GetChunkPos(int64_t index) {
 }
 
 int8_t GetSolidHeight(Int2 pos) {
-    Int2 cPos = Int2{pos.x / CHUNK_WIDTH_X, pos.y / CHUNK_WIDTH_Z};
+    Int2 cPos = Int2{
+        pos.x >> 4,
+        pos.y >> 4
+    };
     for(int8_t y = CHUNK_HEIGHT-1; y >= 0; y--) {
         int8_t type = GetBlock(Int3{pos.x,y,pos.y});
         if (IsSolid(type)) {
@@ -33,7 +36,10 @@ int8_t GetSolidHeight(Int2 pos) {
 }
 
 std::pair<int8_t, int8_t> GetTopBlock(Int2 pos) {
-    Int2 cPos = Int2{pos.x / CHUNK_WIDTH_X, pos.y / CHUNK_WIDTH_Z};
+    Int2 cPos = Int2{
+        pos.x >> 4,
+        pos.y >> 4
+    };
     for(int8_t y = CHUNK_HEIGHT-1; y >= 0; y--) {
         int8_t type = GetBlock(Int3{pos.x,y,pos.y});
         if (type != 0) {
@@ -45,8 +51,8 @@ std::pair<int8_t, int8_t> GetTopBlock(Int2 pos) {
 
 int8_t GetBlock(Int3 pos) {
     Int2 cPos = Int2{
-    pos.x >= 0 ? pos.x / CHUNK_WIDTH_X : (pos.x - CHUNK_WIDTH_X + 1) / CHUNK_WIDTH_X,
-    pos.z >= 0 ? pos.z / CHUNK_WIDTH_Z : (pos.z - CHUNK_WIDTH_Z + 1) / CHUNK_WIDTH_Z
+        pos.x >> 4,
+        pos.z >> 4
     };
     int64_t id = GetChunkId(cPos);
     auto it = chunks.find(id);
@@ -63,8 +69,14 @@ int8_t GetBlock(Int3 pos) {
 }
 
 void SetBlock(int8_t type, Int3 pos) {
-    auto c = &chunks[GetChunkId(Int2{pos.x / CHUNK_WIDTH_X, pos.z / CHUNK_WIDTH_Z})];
-    if (!c) return;
+    Int2 cPos = Int2{
+        pos.x >> 4,
+        pos.z >> 4
+    };
+    int64_t id = GetChunkId(cPos);
+    auto it = chunks.find(id);
+    if (it == chunks.end()) return;
+    Chunk* c = &it->second;
     c->SetBlock(
         type,
         Int3{

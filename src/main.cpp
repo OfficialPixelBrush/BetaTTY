@@ -23,6 +23,143 @@
 #include "chat.h"
 #include "world.h"
 
+struct BlockTex {
+    // Block Icon
+    char icon = ' ';
+    // Foreground rgb
+    short fg;
+    // Background rgb
+    short bg;
+};
+
+struct nCol {
+    short r,g,b;
+};
+
+enum Col : short {
+    COLOR_GREY   = 8,
+    COLOR_BROWN  = 9,
+    COLOR_BEIGE  = 10,
+    COLOR_ORANGE = 11,
+};
+
+std::vector<BlockTex> blockTextures = {
+    BlockTex{ ' ', COLOR_GREY, COLOR_GREY },
+    BlockTex{ ' ', COLOR_GREY, COLOR_GREY },
+    BlockTex{ '.', COLOR_GREEN, COLOR_GREEN },
+    BlockTex{ '.', COLOR_GREY, COLOR_BROWN },
+    BlockTex{ '#', COLOR_BLACK, COLOR_GREY },
+    BlockTex{ '=', COLOR_BLACK, COLOR_BEIGE },
+    BlockTex{ 't', COLOR_BROWN, COLOR_GREEN },
+    BlockTex{ ' ', COLOR_BLACK, COLOR_BLACK },
+    BlockTex{ '~', COLOR_CYAN, COLOR_BLUE },
+    BlockTex{ '~', COLOR_CYAN, COLOR_BLUE },
+    BlockTex{ '~', COLOR_RED, COLOR_ORANGE },
+    BlockTex{ '~', COLOR_RED, COLOR_ORANGE },
+    BlockTex{ '.', COLOR_YELLOW, COLOR_BEIGE },
+    BlockTex{ '.', COLOR_WHITE, COLOR_GREY },
+    BlockTex{ '*', COLOR_YELLOW, COLOR_GREY },
+    BlockTex{ '*', COLOR_BEIGE, COLOR_GREY },
+    BlockTex{ '*', COLOR_BLACK, COLOR_GREY },
+    BlockTex{ 'O', COLOR_BEIGE, COLOR_BROWN },
+    BlockTex{ '#', COLOR_GREEN, COLOR_BLACK },
+    BlockTex{ ':', COLOR_BLACK, COLOR_YELLOW },
+    BlockTex{ '/', COLOR_CYAN, COLOR_WHITE },
+    BlockTex{ '*', COLOR_BLUE, COLOR_GREY },
+    BlockTex{ ' ', COLOR_BLUE, COLOR_BLUE },
+    BlockTex{ 'o', COLOR_BLACK, COLOR_GREY },
+    BlockTex{ '=', COLOR_ORANGE, COLOR_YELLOW },
+    BlockTex{ '#', COLOR_BLACK, COLOR_BROWN },
+    BlockTex{ '[', COLOR_GREY, COLOR_WHITE },
+    BlockTex{ '=', COLOR_RED, COLOR_BROWN },
+    BlockTex{ '=', COLOR_ORANGE, COLOR_BROWN },
+    BlockTex{ 'T', COLOR_GREEN, COLOR_GREY },
+    BlockTex{ '#', COLOR_WHITE, COLOR_BLACK },
+    BlockTex{ '^', COLOR_BLACK, COLOR_GREEN },
+    BlockTex{ 't', COLOR_BROWN, COLOR_BEIGE },
+    BlockTex{ 'T', COLOR_BROWN, COLOR_GREY },
+    BlockTex{ 'T', COLOR_BROWN, COLOR_GREY },
+    BlockTex{ ' ', COLOR_WHITE, COLOR_WHITE },
+    BlockTex{ 'X', COLOR_RED, COLOR_BLACK },
+    BlockTex{ 't', COLOR_YELLOW, COLOR_GREEN },
+    BlockTex{ 't', COLOR_RED, COLOR_GREEN },
+    BlockTex{ 'o', COLOR_BROWN, COLOR_GREY },
+    BlockTex{ 'o', COLOR_RED, COLOR_GREY },
+    BlockTex{ '/', COLOR_WHITE, COLOR_YELLOW },
+    BlockTex{ '/', COLOR_WHITE, COLOR_GREY },
+    BlockTex{ '-', COLOR_WHITE, COLOR_GREY },
+    BlockTex{ '_', COLOR_WHITE, COLOR_GREY },
+    BlockTex{ '#', COLOR_WHITE, COLOR_RED },
+    BlockTex{ '=', COLOR_WHITE, COLOR_RED },
+    BlockTex{ '=', COLOR_RED, COLOR_BROWN },
+    BlockTex{ '#', COLOR_GREEN, COLOR_GREY },
+    BlockTex{ '#', COLOR_MAGENTA, COLOR_BLACK },
+    BlockTex{ 'i', COLOR_ORANGE, COLOR_YELLOW },
+    BlockTex{ 'M', COLOR_RED, COLOR_ORANGE },
+    BlockTex{ '#', COLOR_BLUE, COLOR_BLACK },
+    BlockTex{ '/', COLOR_BLACK, COLOR_BEIGE },
+    BlockTex{ '=', COLOR_BLACK, COLOR_ORANGE },
+    BlockTex{ '~', COLOR_RED, COLOR_BLACK },
+    BlockTex{ '*', COLOR_CYAN, COLOR_GREY },
+    BlockTex{ '/', COLOR_WHITE, COLOR_CYAN },
+    BlockTex{ 'W', COLOR_BEIGE, COLOR_BROWN },
+    BlockTex{ 'm', COLOR_YELLOW, COLOR_BROWN },
+    BlockTex{ '~', COLOR_BLACK, COLOR_BROWN },
+    BlockTex{ 'n', COLOR_GREY, COLOR_BLACK },
+    BlockTex{ 'n', COLOR_ORANGE, COLOR_BLACK },
+    BlockTex{ 'T', COLOR_BEIGE, COLOR_BLACK },
+    BlockTex{ 'D', COLOR_BEIGE, COLOR_BLACK },
+    BlockTex{ 'H', COLOR_BEIGE, COLOR_BLACK },
+    BlockTex{ '=', COLOR_GREY, COLOR_BROWN },
+    BlockTex{ '/', COLOR_BLACK, COLOR_GREY },
+    BlockTex{ 'T', COLOR_BEIGE, COLOR_BLACK },
+    BlockTex{ '\\', COLOR_BROWN, COLOR_GREY },
+    BlockTex{ 'X', COLOR_BLACK, COLOR_GREY },
+    BlockTex{ 'D', COLOR_WHITE, COLOR_GREY },
+    BlockTex{ 'X', COLOR_BLACK, COLOR_BEIGE },
+    BlockTex{ '*', COLOR_RED, COLOR_GREY },
+    BlockTex{ '*', COLOR_ORANGE, COLOR_GREY },
+    BlockTex{ 'i', COLOR_RED, COLOR_BLACK },
+    BlockTex{ 'i', COLOR_ORANGE, COLOR_RED },
+    BlockTex{ '.', COLOR_GREY, COLOR_BLACK },
+    BlockTex{ '.', COLOR_CYAN, COLOR_WHITE },
+    BlockTex{ '/', COLOR_BLUE, COLOR_CYAN },
+    BlockTex{ ' ', COLOR_WHITE, COLOR_WHITE },
+    BlockTex{ 'O', COLOR_YELLOW, COLOR_GREEN },
+    BlockTex{ '~', COLOR_BROWN, COLOR_GREY },
+    BlockTex{ ':', COLOR_GREEN, COLOR_BEIGE },
+    BlockTex{ 'o', COLOR_BLACK, COLOR_BROWN },
+    BlockTex{ 'T', COLOR_BROWN, COLOR_GREEN },
+    BlockTex{ '.', COLOR_GREEN, COLOR_ORANGE },
+    BlockTex{ '#', COLOR_BLACK, COLOR_RED },
+    BlockTex{ '~', COLOR_BLACK, COLOR_BROWN },
+    BlockTex{ '#', COLOR_ORANGE, COLOR_YELLOW },
+    BlockTex{ '~', COLOR_BLACK, COLOR_MAGENTA },
+    BlockTex{ '.', COLOR_YELLOW, COLOR_ORANGE },
+    BlockTex{ ':', COLOR_RED, COLOR_WHITE },
+    BlockTex{ '>', COLOR_BLACK, COLOR_GREY },
+    BlockTex{ '>', COLOR_RED, COLOR_GREY },
+    BlockTex{ 'X', COLOR_RED, COLOR_BLACK },
+    BlockTex{ '#', COLOR_BEIGE, COLOR_ORANGE },
+};
+
+void InitColors() {
+    nCol cols[] = {
+        nCol { 500, 500, 500 },
+        nCol { 500,400, 200 },
+        nCol { 900, 900, 800 },
+        nCol { 900, 700, 0 },
+    };
+    short ci = COLOR_GREY;
+    for (const auto &c : cols) {
+        init_color(ci++, c.r, c.g, c.b);
+    }
+    short bi = 1;
+    for (const auto &b : blockTextures) {
+        init_pair(bi++, b.fg, b.bg);
+    }
+}
+
 Int2 WorldToScreen(Int2 worldPos) {
     Int2 screenPos;
     screenPos.x = worldPos.x - int32_t(client.player.pos.x) + max_width / 2;
@@ -39,35 +176,20 @@ Int2 ScreenToWorld(Int2 screenPos) {
 
 // Render Block at presented screen coordinate
 int RenderBlock(Int2 screenPos) {
-    int32_t color = A_DIM;
-    char icon = '.';
     Int2 worldPos = ScreenToWorld(screenPos);
     int8_t type;
     std::pair<int8_t, int8_t> typeTop = GetTopBlock(Int2{worldPos.x, worldPos.y});
     if (typeTop.second >= client.player.pos.y) {
         type = GetBlock(Int3{worldPos.x, int32_t(client.player.pos.y), worldPos.y});
-        color = 0;
+        //color = 0;
     } else {
         type = typeTop.first;
     }
-    switch(type) {
-        default:
-            color |= COLOR_PAIR(1);
-            icon = '.';
-            break;
-        case 8: // Water
-        case 9: // Water
-            color |= COLOR_PAIR(4);
-            icon = '~';
-            break;
-        case 2: // Grass
-            color |= COLOR_PAIR(5);
-            icon = ' ';
-            break;
-        case 12: // Sand
-            color |= COLOR_PAIR(6);
-            icon = '#';
-            break;
+    int32_t color = COLOR_BLACK;
+    char icon = '/';
+    if (type >= 0 && type < blockTextures.size()) {
+        color = COLOR_PAIR(type+1);
+        icon = blockTextures[type].icon;
     }
     attron(color);
     addch(icon);
@@ -307,12 +429,7 @@ int main(int argc, char *argv[]) {
     }
 
     start_color();
-    init_pair(1, COLOR_WHITE, COLOR_BLACK); // UI
-    init_pair(2, COLOR_WHITE, COLOR_RED);   // Player
-    init_pair(3, COLOR_WHITE, COLOR_CYAN);  // Sky
-    init_pair(4, COLOR_CYAN, COLOR_BLUE);  // Water
-    init_pair(5, COLOR_GREEN, COLOR_GREEN);  // Grass
-    init_pair(6, COLOR_YELLOW, COLOR_YELLOW);  // Sand
+    InitColors();
 
     while(running) {
         attron(COLOR_PAIR(3));
@@ -333,6 +450,7 @@ int main(int argc, char *argv[]) {
             mvwaddch(stdscr, (max_height+0.5)/2, (max_width+0.5)/2, '+');
             attroff(COLOR_PAIR(2));
             mvwaddch(stdscr, max_height/2 + client.cursor.z, max_width/2 + client.cursor.x, 'X');
+            move(0,0);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         ProcessInputs(clientSocket);

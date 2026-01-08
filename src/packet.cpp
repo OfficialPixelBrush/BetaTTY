@@ -55,9 +55,9 @@ void AsyncPacketSend(int clientSocket) {
         ParsePacket(pt, clientSocket);
         
         auto now = clock::now();
-        if (now - lastKeepAlive >= std::chrono::milliseconds(50)) {
+        if (now - lastKeepAlive >= std::chrono::milliseconds(PACKET_INTERVAL)) {
             KeepAlivePacket kaPacket;
-            kaPacket.Send(clientSocket);
+            //kaPacket.Send(clientSocket);
             lastKeepAlive = now;
         }
         //std::this_thread::sleep_for(std::chrono::milliseconds(50));

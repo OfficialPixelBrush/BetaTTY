@@ -10,7 +10,7 @@
 
 // Packet related
 #define PACKET_BUFFER_SIZE 4096
-#define PACKET_INTERVAL 1000/20
+#define PACKET_INTERVAL 1000/10
 #define PROTOCOL_VERSION 14
 
 // Chat-related
