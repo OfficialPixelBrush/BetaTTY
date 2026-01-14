@@ -179,12 +179,15 @@ int RenderBlock(Int2 screenPos) {
     Int2 worldPos = ScreenToWorld(screenPos);
     int8_t type;
     std::pair<int8_t, int8_t> typeTop = GetTopBlock(Int2{worldPos.x, worldPos.y});
+    type = typeTop.first;
+    /*
     if (typeTop.second >= client.player.pos.y) {
         type = GetBlock(Int3{worldPos.x, int32_t(client.player.pos.y), worldPos.y});
         //color = 0;
     } else {
         type = typeTop.first;
     }
+    */
     int32_t color = COLOR_BLACK;
     char icon = '/';
     if (type >= 0 && type < blockTextures.size()) {

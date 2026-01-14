@@ -40,13 +40,17 @@ std::pair<int8_t, int8_t> GetTopBlock(Int2 pos) {
         pos.x >> 4,
         pos.y >> 4
     };
-    for(int8_t y = CHUNK_HEIGHT-1; y >= 0; y--) {
-        int8_t type = GetBlock(Int3{pos.x,y,pos.y});
-        if (type != 0) {
-            return std::make_pair(type, y);
+    int64_t id = GetChunkId(cPos);
+    auto it = chunks.find(id);
+    if (it == chunks.end()) 
+        return std::make_pair(0,0);
+    Chunk& c = it->second;
+    return c.GetTopBlock(
+        Int2{
+            pos.x & 15,
+            pos.y & 15
         }
-    }
-    return std::make_pair(0,0);
+    );
 }
 
 int8_t GetBlock(Int3 pos) {
@@ -65,7 +69,6 @@ int8_t GetBlock(Int3 pos) {
             pos.z & 15,
         }
     );
-    return 0;
 }
 
 void SetBlock(int8_t type, Int3 pos) {
